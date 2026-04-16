@@ -111,14 +111,13 @@ echo ""
 # ── Б1. needrestart фикс + обновление системы ──────────────────────────
 log_step "[1/14] Обновление системы..."
 
-# Останавливаем unattended-upgrades — главная причина зависания apt lock
 systemctl stop unattended-upgrades 2>/dev/null || true
 systemctl disable unattended-upgrades 2>/dev/null || true
 pkill -9 unattended-upgrades 2>/dev/null || true
-sleep 2
+sleep 1
 
-# Снимаем dpkg/apt lock-файлы если остались от предыдущего apt
-rm -f /var/lib/dpkg/lock-frontend       /var/lib/dpkg/lock       /var/cache/apt/archives/lock       /var/lib/apt/lists/lock 2>/dev/null || true
+rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock \
+      /var/cache/apt/archives/lock /var/lib/apt/lists/lock 2>/dev/null || true
 dpkg --configure -a >/dev/null 2>&1 || true
 
 # Фикс needrestart — главная причина зависания на Ubuntu 22.04+/24.04
@@ -130,17 +129,14 @@ if [ -f /etc/needrestart/needrestart.conf ]; then
   log_info "needrestart настроен (авто-режим)"
 fi
 
-DEBIAN_FRONTEND=noninteractive apt-get update -y -qq 2>/dev/null || true
-
-DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq \
-  -o Dpkg::Options::="--force-confdef" \
-  -o Dpkg::Options::="--force-confold" \
-  -o DPkg::Lock::Timeout=120 2>/dev/null || true
+# Только update + нужные пакеты — без upgrade всей системы
+DEBIAN_FRONTEND=noninteractive apt-get update -qq \
+  -o DPkg::Lock::Timeout=60 2>/dev/null || true
 
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
   -o Dpkg::Options::="--force-confdef" \
   -o Dpkg::Options::="--force-confold" \
-  -o DPkg::Lock::Timeout=120 \
+  -o DPkg::Lock::Timeout=60 \
   curl wget git openssl ufw build-essential 2>/dev/null || true
 
 log_ok "Система обновлена"
@@ -395,9 +391,9 @@ mkdir -p "${PANEL_DIR}/panel/data"
 log_ok "Панель загружена в ${PANEL_DIR}"
 
 # ── Запись config.json ПОСЛЕ клонирования ─────────────────────────────
-log_step "Сохранение конфигурации NaiveProxy в панель..."
-
-cat > "${PANEL_DIR}/panel/data/config.json" << CONFIGEOF
+if [[ ! -f "${PANEL_DIR}/panel/data/config.json" ]]; then
+  log_step "Сохранение конфигурации NaiveProxy в панель..."
+  cat > "${PANEL_DIR}/panel/data/config.json" << CONFIGEOF
 {
   "installed": true,
   "domain": "${NAIVE_DOMAIN}",
@@ -413,8 +409,10 @@ cat > "${PANEL_DIR}/panel/data/config.json" << CONFIGEOF
   ]
 }
 CONFIGEOF
-
-log_ok "config.json записан → панель покажет установленный NaiveProxy"
+  log_ok "config.json записан → панель покажет установленный NaiveProxy"
+else
+  log_warn "config.json уже существует — не перезаписываем (сохраняем пользователей)"
+fi
 
 # ── Б13. Настройка UFW ────────────────────────────────────────────────
 log_step "[13/14] Настройка файрволла UFW..."
