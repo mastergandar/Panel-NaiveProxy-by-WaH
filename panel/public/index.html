@@ -19,18 +19,24 @@
   </div>
   <div class="login-card">
     <div class="login-logo">
-      <div class="logo-icon">
-        <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-          <circle cx="18" cy="18" r="17" stroke="url(#grad1)" stroke-width="2"/>
-          <path d="M10 18C10 13.58 13.58 10 18 10C22.42 10 26 13.58 26 18" stroke="url(#grad1)" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="18" cy="18" r="4" fill="url(#grad1)"/>
-          <defs>
-            <linearGradient id="grad1" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#7C3AED"/>
-              <stop offset="100%" stop-color="#3B82F6"/>
-            </linearGradient>
-          </defs>
-        </svg>
+      <!-- LOGO SLOT: замените src на свой логотип (PNG/SVG ~48x48px) -->
+      <div class="logo-icon" id="logoIconEl">
+        <img id="customLogoImg" src="/assets/logo.png" alt="Logo"
+             style="width:36px;height:36px;object-fit:contain;border-radius:6px;"
+             onerror="this.style.display='none';document.getElementById('defaultLogoSvg').style.display='flex'">
+        <div id="defaultLogoSvg" style="display:none;align-items:center;justify-content:center;">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <circle cx="18" cy="18" r="17" stroke="url(#grad1)" stroke-width="2"/>
+            <path d="M10 18C10 13.58 13.58 10 18 10C22.42 10 26 13.58 26 18" stroke="url(#grad1)" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="18" cy="18" r="4" fill="url(#grad1)"/>
+            <defs>
+              <linearGradient id="grad1" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#7C3AED"/>
+                <stop offset="100%" stop-color="#3B82F6"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
       </div>
       <div>
         <div class="logo-title">NaiveProxy</div>
@@ -49,7 +55,7 @@
         <label class="form-label">Пароль</label>
         <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" autocomplete="current-password">
       </div>
-      <button type="submit" class="btn btn-primary btn-full">
+      <button type="submit" class="btn btn-shiny btn-full">
         <span class="btn-text">Войти</span>
         <span class="btn-loader hidden">
           <svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -68,18 +74,24 @@
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="sidebar-logo">
+      <!-- SIDEBAR LOGO SLOT -->
       <div class="logo-icon small">
-        <svg width="24" height="24" viewBox="0 0 36 36" fill="none">
-          <circle cx="18" cy="18" r="17" stroke="url(#grad2)" stroke-width="2"/>
-          <path d="M10 18C10 13.58 13.58 10 18 10C22.42 10 26 13.58 26 18" stroke="url(#grad2)" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="18" cy="18" r="4" fill="url(#grad2)"/>
-          <defs>
-            <linearGradient id="grad2" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#7C3AED"/>
-              <stop offset="100%" stop-color="#3B82F6"/>
-            </linearGradient>
-          </defs>
-        </svg>
+        <img src="/assets/logo.png" alt="Logo"
+             style="width:24px;height:24px;object-fit:contain;border-radius:4px;"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div style="display:none;align-items:center;justify-content:center;">
+          <svg width="24" height="24" viewBox="0 0 36 36" fill="none">
+            <circle cx="18" cy="18" r="17" stroke="url(#grad2)" stroke-width="2"/>
+            <path d="M10 18C10 13.58 13.58 10 18 10C22.42 10 26 13.58 26 18" stroke="url(#grad2)" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="18" cy="18" r="4" fill="url(#grad2)"/>
+            <defs>
+              <linearGradient id="grad2" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#7C3AED"/>
+                <stop offset="100%" stop-color="#3B82F6"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
       </div>
       <div>
         <div class="sidebar-title">NaiveProxy</div>
@@ -142,9 +154,7 @@
           </div>
           <div class="stat-body">
             <div class="stat-label">Статус сервиса</div>
-            <div class="stat-value" id="serviceStatus">
-              <span class="dot dot-gray"></span> Загрузка...
-            </div>
+            <div class="stat-value" id="serviceStatus"><span class="dot dot-gray"></span> Загрузка...</div>
           </div>
         </div>
         <div class="stat-card">
@@ -186,7 +196,7 @@
               <div class="not-installed-msg hidden" id="notInstalledMsg">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 <p>NaiveProxy ещё не установлен.</p>
-                <button class="btn btn-primary" onclick="goToPage('install')">Перейти к установке</button>
+                <button class="btn btn-shiny" onclick="goToPage('install')">Перейти к установке</button>
               </div>
               <div class="service-btns" id="serviceBtns">
                 <button class="btn btn-success" onclick="serviceAction('start')">
@@ -264,15 +274,23 @@
                 </label>
                 <div class="input-group">
                   <input type="text" id="installPassword" class="form-input" placeholder="Будет сгенерирован автоматически">
-                  <button type="button" class="btn btn-outline" onclick="generatePassword()" title="Сгенерировать пароль">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                  <!-- ИСПРАВЛЕНО: иконка кубика (генерация) вместо скрепки -->
+                  <button type="button" class="btn btn-outline btn-gen" onclick="generatePassword()" title="Сгенерировать случайный пароль">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="2" y="2" width="20" height="20" rx="4"/>
+                      <circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/>
+                      <circle cx="16" cy="8" r="1.5" fill="currentColor" stroke="none"/>
+                      <circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none"/>
+                      <circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none"/>
+                      <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+                    </svg>
                   </button>
                 </div>
               </div>
             </div>
 
             <div class="form-actions">
-              <button class="btn btn-primary btn-lg" id="startInstallBtn" onclick="startInstall()">
+              <button class="btn btn-shiny btn-lg" id="startInstallBtn" onclick="startInstall()">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
                 Начать установку
               </button>
@@ -287,56 +305,22 @@
             <div class="progress-percent" id="progressPercent">0%</div>
           </div>
           <div class="card-body">
-            <!-- Progress Bar -->
             <div class="progress-bar-wrap">
               <div class="progress-bar" id="progressBar" style="width: 0%"></div>
             </div>
-
-            <!-- Steps -->
             <div class="install-steps">
-              <div class="install-step" id="step-init" data-step="init">
-                <div class="step-dot"></div>
-                <div class="step-label">Инициализация</div>
-              </div>
-              <div class="install-step" id="step-update" data-step="update">
-                <div class="step-dot"></div>
-                <div class="step-label">Обновление системы</div>
-              </div>
-              <div class="install-step" id="step-bbr" data-step="bbr">
-                <div class="step-dot"></div>
-                <div class="step-label">Включение BBR</div>
-              </div>
-              <div class="install-step" id="step-firewall" data-step="firewall">
-                <div class="step-dot"></div>
-                <div class="step-label">Настройка файрволла</div>
-              </div>
-              <div class="install-step" id="step-golang" data-step="golang">
-                <div class="step-dot"></div>
-                <div class="step-label">Установка Go</div>
-              </div>
-              <div class="install-step" id="step-caddy" data-step="caddy">
-                <div class="step-dot"></div>
-                <div class="step-label">Сборка Caddy (3-7 мин)</div>
-              </div>
-              <div class="install-step" id="step-caddyfile" data-step="caddyfile">
-                <div class="step-dot"></div>
-                <div class="step-label">Конфигурация</div>
-              </div>
-              <div class="install-step" id="step-service" data-step="service">
-                <div class="step-dot"></div>
-                <div class="step-label">Настройка сервиса</div>
-              </div>
-              <div class="install-step" id="step-start" data-step="start">
-                <div class="step-dot"></div>
-                <div class="step-label">Запуск</div>
-              </div>
-              <div class="install-step" id="step-done" data-step="done">
-                <div class="step-dot"></div>
-                <div class="step-label">Готово!</div>
-              </div>
+              <div class="install-step" id="step-init" data-step="init"><div class="step-dot"></div><div class="step-label">Инициализация</div></div>
+              <div class="install-step" id="step-update" data-step="update"><div class="step-dot"></div><div class="step-label">Обновление системы</div></div>
+              <div class="install-step" id="step-bbr" data-step="bbr"><div class="step-dot"></div><div class="step-label">Включение BBR</div></div>
+              <div class="install-step" id="step-firewall" data-step="firewall"><div class="step-dot"></div><div class="step-label">Настройка файрволла</div></div>
+              <div class="install-step" id="step-golang" data-step="golang"><div class="step-dot"></div><div class="step-label">Установка Go</div></div>
+              <div class="install-step" id="step-caddy" data-step="caddy"><div class="step-dot"></div><div class="step-label">Сборка Caddy (3-7 мин)</div></div>
+              <div class="install-step" id="step-caddyfile" data-step="caddyfile"><div class="step-dot"></div><div class="step-label">Конфигурация</div></div>
+              <div class="install-step" id="step-service" data-step="service"><div class="step-dot"></div><div class="step-label">Настройка сервиса</div></div>
+              <div class="install-step" id="step-start" data-step="start"><div class="step-dot"></div><div class="step-label">Запуск</div></div>
+              <div class="install-step" id="step-done" data-step="done"><div class="step-dot"></div><div class="step-label">Готово!</div></div>
             </div>
 
-            <!-- Terminal Log -->
             <div class="terminal-wrap">
               <div class="terminal-header">
                 <span class="terminal-dot red"></span>
@@ -347,7 +331,6 @@
               <div class="terminal" id="installLog"></div>
             </div>
 
-            <!-- Done state -->
             <div class="install-done hidden" id="installDone">
               <div class="done-icon">✅</div>
               <h3>Установка завершена!</h3>
@@ -360,9 +343,7 @@
                   Копировать
                 </button>
               </div>
-              <button class="btn btn-primary" onclick="goToPage('dashboard')">
-                Перейти на дашборд
-              </button>
+              <button class="btn btn-shiny" onclick="goToPage('dashboard')">Перейти на дашборд</button>
             </div>
           </div>
         </div>
@@ -373,7 +354,7 @@
     <div class="page" id="usersPage">
       <div class="page-header">
         <h1 class="page-title">Прокси-пользователи</h1>
-        <button class="btn btn-primary" onclick="showAddUserModal()">
+        <button class="btn btn-shiny" onclick="showAddUserModal()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Добавить пользователя
         </button>
@@ -385,7 +366,7 @@
             <div class="empty-state" id="emptyUsers" style="display:none">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               <p>Пользователи не добавлены</p>
-              <button class="btn btn-primary" onclick="showAddUserModal()">Добавить первого</button>
+              <button class="btn btn-shiny" onclick="showAddUserModal()">Добавить первого</button>
             </div>
             <table class="data-table" id="usersTable" style="display:none">
               <thead>
@@ -411,6 +392,8 @@
         <h1 class="page-title">Настройки</h1>
       </div>
       <div class="settings-grid">
+
+        <!-- Смена пароля -->
         <div class="card">
           <div class="card-header">
             <h3 class="card-title">Смена пароля панели</h3>
@@ -419,20 +402,21 @@
             <div id="pwdChangeAlert" class="alert hidden"></div>
             <div class="form-group">
               <label class="form-label">Текущий пароль</label>
-              <input type="password" id="currentPwd" class="form-input" placeholder="••••••••">
+              <input type="password" id="currentPwd" class="form-input" placeholder="••••••••" autocomplete="current-password">
             </div>
             <div class="form-group">
               <label class="form-label">Новый пароль</label>
-              <input type="password" id="newPwd" class="form-input" placeholder="••••••••">
+              <input type="password" id="newPwd" class="form-input" placeholder="••••••••" autocomplete="new-password">
             </div>
             <div class="form-group">
               <label class="form-label">Подтвердите пароль</label>
-              <input type="password" id="confirmPwd" class="form-input" placeholder="••••••••">
+              <input type="password" id="confirmPwd" class="form-input" placeholder="••••••••" autocomplete="new-password">
             </div>
-            <button class="btn btn-primary" onclick="changePassword()">Сохранить</button>
+            <button class="btn btn-shiny" onclick="changePassword()">Сохранить пароль</button>
           </div>
         </div>
 
+        <!-- Информация о панели -->
         <div class="card">
           <div class="card-header">
             <h3 class="card-title">Информация о панели</h3>
@@ -456,38 +440,70 @@
                 <a href="https://github.com/cwash797-cmd" target="_blank" class="info-val link">cwash797-cmd</a>
               </div>
             </div>
+
+            <!-- Поддержать автора + Telegram -->
+            <div class="support-btns">
+              <a href="https://app.lava.top/2107724612?tabId=donate" target="_blank" class="btn btn-shiny btn-full">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21C12 21 3 13.5 3 8a9 9 0 0 1 18 0c0 5.5-9 13-9 13z"/><circle cx="12" cy="8" r="2"/></svg>
+                Поддержать автора ❤️
+              </a>
+              <a href="https://t.me/russian_paradice_vpn" target="_blank" class="btn btn-tg btn-full">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                </svg>
+                Подписывайся на нас в Telegram
+              </a>
+            </div>
           </div>
         </div>
 
-        <div class="card">
+        <!-- Клиентские приложения — ОБНОВЛЕНО -->
+        <div class="card settings-clients-card">
           <div class="card-header">
             <h3 class="card-title">Клиентские приложения</h3>
           </div>
           <div class="card-body">
             <div class="clients-list">
+              <!-- iOS -->
               <div class="client-item">
-                <div class="client-platform">iOS</div>
+                <div class="client-platform ios">iOS</div>
                 <div class="client-name">Karing</div>
-                <a class="client-link" href="https://apps.apple.com/app/karing/id6472431552" target="_blank">App Store</a>
+                <a class="client-link" href="https://apps.apple.com/app/karing/id6472431552" target="_blank">App Store ↗</a>
               </div>
+              <!-- Android -->
               <div class="client-item">
-                <div class="client-platform">Android</div>
+                <div class="client-platform android">Android</div>
                 <div class="client-name">NekoBox</div>
-                <a class="client-link" href="https://github.com/MatsuriDayo/NekoBoxForAndroid/releases" target="_blank">GitHub</a>
+                <a class="client-link" href="https://github.com/MatsuriDayo/NekoBoxForAndroid/releases" target="_blank">GitHub ↗</a>
               </div>
               <div class="client-item">
-                <div class="client-platform">Windows</div>
-                <div class="client-name">Hiddify</div>
-                <a class="client-link" href="https://github.com/hiddify/hiddify-app/releases" target="_blank">GitHub</a>
+                <div class="client-platform android">Android</div>
+                <div class="client-name">Karing</div>
+                <a class="client-link" href="https://github.com/KaringX/karing/releases" target="_blank">GitHub ↗</a>
+              </div>
+              <!-- Windows — Hiddify убран, добавлены Karing и v2rayN -->
+              <div class="client-item">
+                <div class="client-platform windows">Windows</div>
+                <div class="client-name">Karing</div>
+                <a class="client-link" href="https://github.com/KaringX/karing/releases" target="_blank">GitHub ↗</a>
               </div>
               <div class="client-item">
-                <div class="client-platform">Windows</div>
+                <div class="client-platform windows">Windows</div>
                 <div class="client-name">NekoRay</div>
-                <a class="client-link" href="https://github.com/MatsuriDayo/nekoray/releases" target="_blank">GitHub</a>
+                <a class="client-link" href="https://github.com/MatsuriDayo/nekoray/releases" target="_blank">GitHub ↗</a>
               </div>
+              <div class="client-item">
+                <div class="client-platform windows">Windows</div>
+                <div class="client-name">v2rayN</div>
+                <a class="client-link" href="https://github.com/2dust/v2rayN/releases" target="_blank">GitHub ↗</a>
+              </div>
+            </div>
+            <div class="client-note">
+              Формат ссылки: <code>naive+https://LOGIN:PASSWORD@domain.com:443</code>
             </div>
           </div>
         </div>
+
       </div>
     </div>
 
@@ -507,21 +523,28 @@
       <div id="addUserAlert" class="alert hidden"></div>
       <div class="form-group">
         <label class="form-label">Логин</label>
-        <input type="text" id="newUserLogin" class="form-input" placeholder="username">
+        <input type="text" id="newUserLogin" class="form-input" placeholder="username" autocomplete="off">
       </div>
       <div class="form-group">
         <label class="form-label">Пароль</label>
         <div class="input-group">
-          <input type="text" id="newUserPassword" class="form-input" placeholder="password">
-          <button type="button" class="btn btn-outline" onclick="generateUserPassword()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          <input type="text" id="newUserPassword" class="form-input" placeholder="password" autocomplete="off">
+          <button type="button" class="btn btn-outline btn-gen" onclick="generateUserPassword()" title="Сгенерировать пароль">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="20" rx="4"/>
+              <circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/>
+              <circle cx="16" cy="8" r="1.5" fill="currentColor" stroke="none"/>
+              <circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none"/>
+              <circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none"/>
+              <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+            </svg>
           </button>
         </div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('addUserModal')">Отмена</button>
-      <button class="btn btn-primary" onclick="addUser()">Добавить</button>
+      <button class="btn btn-shiny" onclick="addUser()">Добавить</button>
     </div>
   </div>
 </div>

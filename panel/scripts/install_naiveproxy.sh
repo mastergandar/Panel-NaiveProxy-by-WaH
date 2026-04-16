@@ -1,13 +1,16 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════
 #  NaiveProxy Auto-Installer — by RIXXX
-#  Используется панелью управления Panel NaiveProxy by RIXXX
-#  Переменные окружения: NAIVE_DOMAIN, NAIVE_EMAIL,
-#                        NAIVE_LOGIN, NAIVE_PASSWORD
+#  Panel NaiveProxy by RIXXX
+#  ENV: NAIVE_DOMAIN, NAIVE_EMAIL, NAIVE_LOGIN, NAIVE_PASSWORD
 # ═══════════════════════════════════════════════════════
 
-set -euo pipefail
+# НЕ используем set -e чтобы не прерываться на некритичных ошибках
+# Обрабатываем ошибки вручную в критичных местах
+set -uo pipefail
 export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a        # отключает интерактивный needrestart
+export NEEDRESTART_SUSPEND=1
 
 # ── Параметры ──────────────────────────────────────────
 DOMAIN="${NAIVE_DOMAIN:-}"
@@ -20,28 +23,43 @@ if [[ -z "$DOMAIN" || -z "$EMAIL" || -z "$LOGIN" || -z "$PASSWORD" ]]; then
   exit 1
 fi
 
-log() { echo "$1"; }
+log()  { echo "$1"; }
 step() { echo "STEP:$1"; }
 
 # ══════════════════════════════════════════════════════
 step 1
 log "▶ Обновление системы и установка зависимостей..."
 # ══════════════════════════════════════════════════════
-apt-get update -y -q 2>&1 | tail -1
-apt-get upgrade -y -q 2>&1 | tail -1
-apt-get install -y -q curl wget git openssl ufw 2>&1 | tail -1
+
+# Принудительно некинтерактивно, подавляем needrestart и grub prompts
+apt-get update -y \
+  -o Dpkg::Options::="--force-confdef" \
+  -o Dpkg::Options::="--force-confold" \
+  -q 2>&1 | tail -2
+
+apt-get upgrade -y \
+  -o Dpkg::Options::="--force-confdef" \
+  -o Dpkg::Options::="--force-confold" \
+  -q 2>&1 | tail -2
+
+apt-get install -y -q \
+  -o Dpkg::Options::="--force-confdef" \
+  -o Dpkg::Options::="--force-confold" \
+  curl wget git openssl ufw 2>&1 | tail -2
+
 log "✅ Система обновлена"
 
 # ══════════════════════════════════════════════════════
 step 2
 log "▶ Включение BBR..."
 # ══════════════════════════════════════════════════════
-if ! grep -q "net.core.default_qdisc=fq" /etc/sysctl.conf; then
-  echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
-fi
-if ! grep -q "net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf; then
-  echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
-fi
+
+grep -qxF "net.core.default_qdisc=fq" /etc/sysctl.conf \
+  || echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
+
+grep -qxF "net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf \
+  || echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+
 sysctl -p >/dev/null 2>&1 || true
 log "✅ BBR включён"
 
@@ -49,71 +67,93 @@ log "✅ BBR включён"
 step 3
 log "▶ Настройка файрволла UFW..."
 # ══════════════════════════════════════════════════════
+
 ufw --force reset >/dev/null 2>&1 || true
-ufw allow 22/tcp  >/dev/null 2>&1
-ufw allow 80/tcp  >/dev/null 2>&1
-ufw allow 443/tcp >/dev/null 2>&1
-echo "y" | ufw enable >/dev/null 2>&1 || true
-log "✅ Файрволл настроен (порты 22, 80, 443)"
+ufw allow 22/tcp  >/dev/null 2>&1 || true
+ufw allow 80/tcp  >/dev/null 2>&1 || true
+ufw allow 443/tcp >/dev/null 2>&1 || true
+# Принудительно включаем без вопросов
+echo "y" | ufw enable >/dev/null 2>&1 || ufw --force enable >/dev/null 2>&1 || true
+log "✅ Файрволл настроен (22, 80, 443)"
 
 # ══════════════════════════════════════════════════════
 step 4
-log "▶ Установка Go (может занять 1-2 минуты)..."
+log "▶ Установка Go..."
 # ══════════════════════════════════════════════════════
 
-# Remove old Go if present
 rm -rf /usr/local/go
 
-# Get latest Go version
-GO_VERSION=$(curl -fsSL 'https://go.dev/VERSION?m=text' 2>/dev/null | head -n1)
-if [[ -z "$GO_VERSION" ]]; then
-  GO_VERSION="go1.22.3"
-  log "⚠ Не удалось получить версию Go, используем $GO_VERSION"
-fi
+# Пробуем получить актуальную версию, запасной вариант — стабильная
+GO_VERSION=""
+for attempt in 1 2 3; do
+  GO_VERSION=$(curl -fsSL --connect-timeout 10 'https://go.dev/VERSION?m=text' 2>/dev/null | head -n1 || true)
+  [[ -n "$GO_VERSION" ]] && break
+  sleep 2
+done
+[[ -z "$GO_VERSION" ]] && GO_VERSION="go1.22.5"
 
 log "  Загружаем $GO_VERSION..."
-wget -q "https://go.dev/dl/${GO_VERSION}.linux-amd64.tar.gz" -O /tmp/go.tar.gz
+wget -q --timeout=120 \
+  "https://go.dev/dl/${GO_VERSION}.linux-amd64.tar.gz" \
+  -O /tmp/go.tar.gz
+
+if [[ ! -s /tmp/go.tar.gz ]]; then
+  log "ОШИБКА: Не удалось загрузить Go"
+  exit 1
+fi
+
 tar -C /usr/local -xzf /tmp/go.tar.gz
 rm -f /tmp/go.tar.gz
 
-# Update PATH
-export PATH=$PATH:/usr/local/go/bin
-export PATH=$PATH:/root/go/bin
+export PATH=$PATH:/usr/local/go/bin:/root/go/bin
+export GOPATH=/root/go
+export GOROOT=/usr/local/go
 
-# Persist PATH
-if ! grep -q "/usr/local/go/bin" /root/.profile; then
-  echo 'export PATH=$PATH:/usr/local/go/bin' >> /root/.profile
-  echo 'export PATH=$PATH:/root/go/bin' >> /root/.profile
-fi
+grep -q "/usr/local/go/bin" /root/.profile 2>/dev/null || {
+  echo 'export PATH=$PATH:/usr/local/go/bin:/root/go/bin' >> /root/.profile
+  echo 'export GOPATH=/root/go' >> /root/.profile
+}
 
-GO_VER_OUT=$(/usr/local/go/bin/go version 2>/dev/null || echo "unknown")
-log "✅ Go установлен: $GO_VER_OUT"
+GO_VER=$(/usr/local/go/bin/go version 2>/dev/null || echo "unknown")
+log "✅ Go установлен: $GO_VER"
 
 # ══════════════════════════════════════════════════════
 step 5
-log "▶ Сборка Caddy с naive-плагином (это займёт 3-7 минут)..."
+log "▶ Сборка Caddy с naive-плагином (займёт 3-7 минут)..."
 # ══════════════════════════════════════════════════════
 
-# Set Go environment
 export GOPATH=/root/go
 export GOROOT=/usr/local/go
-export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 export TMPDIR=/root/tmp
+export GOPROXY=https://proxy.golang.org,direct
+export GONOSUMCHECK=*
 mkdir -p /root/tmp /root/go
 
-# Install xcaddy
 log "  Установка xcaddy..."
-/usr/local/go/bin/go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest 2>&1 | tail -3
+/usr/local/go/bin/go install \
+  github.com/caddyserver/xcaddy/cmd/xcaddy@latest \
+  2>&1 | grep -v "^$" | tail -3
 
-# Build Caddy with naiveproxy plugin
-log "  Сборка Caddy с forwardproxy naive (ждите...)..."
+if [[ ! -f /root/go/bin/xcaddy ]]; then
+  log "ОШИБКА: xcaddy не установился"
+  exit 1
+fi
+
+log "  Сборка Caddy + forwardproxy@naive (ждите...)..."
 cd /root
+
+# Удаляем старый бинарник если есть
+rm -f /root/caddy
+
 /root/go/bin/xcaddy build \
   --with github.com/caddyserver/forwardproxy@caddy2=github.com/klzgrad/forwardproxy@naive \
-  2>&1 | while read line; do echo "  $line"; done
+  2>&1 | grep -v "^$" | while IFS= read -r line; do
+    echo "  $line"
+  done
 
 if [[ ! -f /root/caddy ]]; then
-  log "ОШИБКА: Caddy не был собран!"
+  log "ОШИБКА: Caddy не был собран! Проверьте интернет и попробуйте снова."
   exit 1
 fi
 
@@ -128,10 +168,9 @@ step 6
 log "▶ Создание конфигурационных файлов..."
 # ══════════════════════════════════════════════════════
 
-# Create directories
 mkdir -p /var/www/html /etc/caddy
 
-# Create camouflage page
+# Камуфляжная страница
 cat > /var/www/html/index.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html>
@@ -153,39 +192,43 @@ cat > /var/www/html/index.html << 'HTMLEOF'
 </html>
 HTMLEOF
 
-# Create Caddyfile with user credentials
-cat > /etc/caddy/Caddyfile << CADDYEOF
+# Caddyfile — строим через printf чтобы избежать проблем с heredoc и переменными
 {
+  printf '{
   order forward_proxy before file_server
-}
+}\n\n'
+  printf ':443, %s {\n' "$DOMAIN"
+  printf '  tls %s\n\n' "$EMAIL"
+  printf '  forward_proxy {\n'
+  printf '    basic_auth %s %s\n' "$LOGIN" "$PASSWORD"
+  printf '    hide_ip\n'
+  printf '    hide_via\n'
+  printf '    probe_resistance\n'
+  printf '  }\n\n'
+  printf '  file_server {\n'
+  printf '    root /var/www/html\n'
+  printf '  }\n'
+  printf '}\n'
+} > /etc/caddy/Caddyfile
 
-:443, ${DOMAIN} {
-  tls ${EMAIL}
+log "✅ Caddyfile создан для домена $DOMAIN"
 
-  forward_proxy {
-    basic_auth ${LOGIN} ${PASSWORD}
-    hide_ip
-    hide_via
-    probe_resistance
-  }
-
-  file_server {
-    root /var/www/html
-  }
-}
-CADDYEOF
-
-log "✅ Caddyfile создан для домена ${DOMAIN}"
-
-# Validate config
-/usr/bin/caddy validate --config /etc/caddy/Caddyfile 2>&1 || {
-  log "⚠ Предупреждение при валидации конфига (не критично)"
-}
+# Валидация конфига
+if /usr/bin/caddy validate --config /etc/caddy/Caddyfile 2>&1; then
+  log "✅ Конфиг валиден"
+else
+  log "⚠ Предупреждение при валидации (продолжаем)"
+fi
 
 # ══════════════════════════════════════════════════════
 step 7
 log "▶ Настройка systemd сервиса..."
 # ══════════════════════════════════════════════════════
+
+# Останавливаем старый Caddy если есть
+systemctl stop caddy 2>/dev/null || true
+pkill -x caddy 2>/dev/null || true
+sleep 1
 
 cat > /etc/systemd/system/caddy.service << 'SERVICEEOF'
 [Unit]
@@ -208,6 +251,8 @@ ProtectSystem=full
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 Restart=always
 RestartSec=5s
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
@@ -222,36 +267,44 @@ log "▶ Включение и запуск Caddy..."
 # ══════════════════════════════════════════════════════
 
 systemctl enable caddy 2>&1 || true
-systemctl restart caddy 2>&1 || {
-  log "⚠ Не удалось запустить через systemctl, пробуем напрямую..."
-  pkill -f "caddy run" 2>/dev/null || true
-  nohup /usr/bin/caddy run --config /etc/caddy/Caddyfile > /var/log/caddy.log 2>&1 &
-  sleep 3
-}
 
-# Wait a bit for service to start
-sleep 5
-
-# Check status
-if systemctl is-active --quiet caddy; then
-  log "✅ Caddy запущен и работает"
-elif pgrep -x caddy > /dev/null; then
-  log "✅ Caddy запущен (процесс обнаружен)"
+# Запуск с таймаутом
+if systemctl start caddy 2>&1; then
+  log "  Caddy запускается..."
 else
-  log "⚠ Caddy может ещё запускаться, проверьте: systemctl status caddy"
+  log "⚠ systemctl start вернул ошибку, пробуем напрямую..."
+  pkill -f "caddy run" 2>/dev/null || true
+  sleep 1
+  nohup /usr/bin/caddy run --config /etc/caddy/Caddyfile \
+    > /var/log/caddy.log 2>&1 &
 fi
+
+# Ждём до 15 секунд
+for i in $(seq 1 15); do
+  if systemctl is-active --quiet caddy 2>/dev/null; then
+    log "✅ Caddy запущен (через ${i}с)"
+    break
+  elif pgrep -x caddy >/dev/null 2>/dev/null; then
+    log "✅ Caddy запущен как процесс (через ${i}с)"
+    break
+  fi
+  sleep 1
+  if [[ $i -eq 15 ]]; then
+    log "⚠ Caddy запускается, проверьте: systemctl status caddy"
+  fi
+done
 
 # ══════════════════════════════════════════════════════
 step DONE
 # ══════════════════════════════════════════════════════
 
 log ""
-log "╔════════════════════════════════════════════════╗"
-log "║   ✅ NaiveProxy успешно установлен!            ║"
-log "║                                                ║"
-log "║   Ссылка для подключения:                      ║"
-log "║   naive+https://${LOGIN}:****@${DOMAIN}:443    ║"
-log "╚════════════════════════════════════════════════╝"
+log "╔════════════════════════════════════════════════════╗"
+log "║   ✅ NaiveProxy успешно установлен!                ║"
+log "║                                                    ║"
+log "║   Домен: ${DOMAIN}                                 ║"
+log "║   Ссылка: naive+https://${LOGIN}:****@${DOMAIN}:443║"
+log "╚════════════════════════════════════════════════════╝"
 log ""
 
 exit 0

@@ -118,14 +118,24 @@ app.get('/api/config', requireAuth, (req, res) => {
 
 app.post('/api/config/change-password', requireAuth, (req, res) => {
   const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res.json({ success: false, message: 'Заполните все поля' });
+  }
+  if (newPassword.length < 6) {
+    return res.json({ success: false, message: 'Новый пароль минимум 6 символов' });
+  }
   const users = loadUsers();
   const user = users[req.session.username];
+  if (!user) {
+    return res.json({ success: false, message: 'Пользователь не найден' });
+  }
   if (!bcrypt.compareSync(currentPassword, user.password)) {
     return res.json({ success: false, message: 'Текущий пароль неверен' });
   }
-  user.password = bcrypt.hashSync(newPassword, 10);
+  // Hash and save new password
+  users[req.session.username].password = bcrypt.hashSync(newPassword, 10);
   saveUsers(users);
-  res.json({ success: true });
+  res.json({ success: true, message: 'Пароль успешно изменён' });
 });
 
 // ─────────────────────────────────────────────

@@ -79,3 +79,4 @@ pm2 stop naiveproxy-panel       # Остановка
 ---
 
 *by RIXXX — NaiveProxy панель с удобным интерфейсом*
+# Panel NaiveProxy by RIXXX
