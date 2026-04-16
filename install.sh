@@ -4,8 +4,10 @@
 #  Запуск: bash <(curl -fsSL https://raw.githubusercontent.com/cwash797-cmd/Panel-NaiveProxy-by-RIXXX/main/install.sh)
 # ═══════════════════════════════════════════════════════════════
 
-set -euo pipefail
+set -uo pipefail
 export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a
+export NEEDRESTART_SUSPEND=1
 
 REPO_URL="https://github.com/cwash797-cmd/Panel-NaiveProxy-by-RIXXX"
 PANEL_DIR="/opt/naiveproxy-panel"
@@ -73,28 +75,29 @@ echo ""
 
 # ── Step 1: System update ────────────────────────────────────
 log_step "Обновление системы..."
-apt-get update -y -q 2>&1 | tail -1
-apt-get install -y -q curl wget git openssl ufw 2>&1 | tail -1
+apt-get update -y -qq   -o Dpkg::Options::="--force-confdef"   -o Dpkg::Options::="--force-confold" || true
+apt-get install -y -qq curl wget git openssl ufw   -o Dpkg::Options::="--force-confdef"   -o Dpkg::Options::="--force-confold" || true
 log_ok "Система обновлена"
 
 # ── Step 2: Install Node.js ──────────────────────────────────
 log_step "Установка Node.js 20..."
 if ! command -v node &>/dev/null || [[ "$(node -v 2>/dev/null | cut -d. -f1 | tr -d 'v')" -lt 18 ]]; then
-  curl -fsSL https://deb.nodesource.com/setup_20.x | bash - >/dev/null 2>&1
-  apt-get install -y -q nodejs 2>&1 | tail -1
+  log_info "Скачиваем NodeSource репозиторий..."
+  curl -fsSL https://deb.nodesource.com/setup_20.x | bash - 2>&1 | grep -E "^##|^Running|error" || true
+  apt-get install -y -qq nodejs     -o Dpkg::Options::="--force-confdef"     -o Dpkg::Options::="--force-confold" || true
 fi
-NODE_VER=$(node -v 2>/dev/null || echo "?")
+NODE_VER=$(node -v 2>/dev/null || echo "не найден")
 log_ok "Node.js установлен: $NODE_VER"
 
 # ── Step 3: Install PM2 ──────────────────────────────────────
 log_step "Установка PM2..."
-npm install -g pm2 --silent 2>&1 | tail -1 || true
-log_ok "PM2 установлен"
+npm install -g pm2 --silent 2>&1 | grep -v "^npm warn" | tail -3 || true
+log_ok "PM2 установлен: $(pm2 -v 2>/dev/null || echo 'ok')"
 
 # ── Step 4: Install Nginx (if needed) ───────────────────────
 if [[ "$ACCESS_MODE" == "1" || "$ACCESS_MODE" == "3" ]]; then
   log_step "Установка Nginx..."
-  apt-get install -y -q nginx 2>&1 | tail -1
+  apt-get install -y -qq nginx     -o Dpkg::Options::="--force-confdef"     -o Dpkg::Options::="--force-confold" || true
   log_ok "Nginx установлен"
 fi
 
@@ -103,17 +106,17 @@ log_step "Загрузка панели управления..."
 if [[ -d "$PANEL_DIR/.git" ]]; then
   log_warn "Панель уже установлена. Обновляем..."
   cd "$PANEL_DIR"
-  git pull --ff-only 2>&1 | tail -2
+  git pull --ff-only || true
 else
   rm -rf "$PANEL_DIR"
-  git clone "$REPO_URL" "$PANEL_DIR" 2>&1 | tail -2
+  git clone "$REPO_URL" "$PANEL_DIR" || { log_err "Ошибка клонирования репозитория. Проверьте интернет."; exit 1; }
 fi
 log_ok "Код загружен в $PANEL_DIR"
 
 # ── Step 6: Install dependencies ────────────────────────────
 log_step "Установка зависимостей Node.js..."
 cd "$PANEL_DIR/panel"
-npm install --omit=dev --silent 2>&1 | tail -2
+npm install --omit=dev 2>&1 | grep -v "^npm warn" | tail -3 || true
 log_ok "Зависимости установлены"
 
 # ── Step 7: Create data dir & permissions ───────────────────
