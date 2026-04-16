@@ -73,7 +73,7 @@ async function doLogin() {
   const username = document.getElementById('loginUsername').value.trim();
   const password = document.getElementById('loginPassword').value;
   const errEl = document.getElementById('loginError');
-  const btn = document.querySelector('#loginForm .btn-primary');
+  const btn = document.querySelector('#loginForm button[type="submit"]');
   const btnText = btn.querySelector('.btn-text');
   const btnLoader = btn.querySelector('.btn-loader');
 
@@ -586,12 +586,23 @@ function fallbackCopy(text) {
 }
 
 let toastTimer = null;
+let toastFadeTimer = null;
 function showToast(message, type = 'info') {
   const toast = document.getElementById('toast');
+  // Reset any pending fade
+  if (toastTimer) clearTimeout(toastTimer);
+  if (toastFadeTimer) clearTimeout(toastFadeTimer);
+  toast.classList.remove('hidden');
+  toast.style.opacity = '';
   toast.textContent = message;
   toast.className = `toast toast-${type}`;
-  if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.add('hidden'), 3000);
+  toastTimer = setTimeout(() => {
+    toast.style.opacity = '0';
+    toastFadeTimer = setTimeout(() => {
+      toast.classList.add('hidden');
+      toast.style.opacity = '';
+    }, 220);
+  }, 2800);
 }
 
 function escapeHtml(str) {

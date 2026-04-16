@@ -344,6 +344,41 @@ if [[ $CADDY_OK -eq 0 ]]; then
   log_warn "Возможно SSL сертификат ещё получается (до 2 минут)"
 fi
 
+# ── Б8.5 Запись data/config.json ─────────────────────────────────────
+log_step "[8.5/14] Сохранение конфигурации в панель..."
+
+CONFIG_DIR="${PANEL_DIR}/panel/data"
+CONFIG_FILE="${CONFIG_DIR}/config.json"
+mkdir -p "${CONFIG_DIR}"
+
+# Получаем IP сервера для записи в конфиг
+SERVER_IP_CONF=$(curl -4 -s --connect-timeout 8 ifconfig.me 2>/dev/null \
+  || curl -4 -s --connect-timeout 8 icanhazip.com 2>/dev/null \
+  || hostname -I | awk '{print $1}')
+
+cat > "${CONFIG_FILE}" << CONFIGEOF
+{
+  "installed": true,
+  "domain": "${NAIVE_DOMAIN}",
+  "email": "${NAIVE_EMAIL}",
+  "serverIp": "${SERVER_IP_CONF}",
+  "adminPassword": "",
+  "proxyUsers": [
+    {
+      "username": "${NAIVE_LOGIN}",
+      "password": "${NAIVE_PASS}",
+      "createdAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+    }
+  ]
+}
+CONFIGEOF
+
+if [[ -f "${CONFIG_FILE}" ]]; then
+  log_ok "Конфиг записан: ${CONFIG_FILE}"
+else
+  log_warn "Не удалось записать конфиг — будет создан при первом запуске панели"
+fi
+
 # ── Б9. Установка Node.js ─────────────────────────────────────────────
 log_step "[9/14] Установка Node.js 20..."
 

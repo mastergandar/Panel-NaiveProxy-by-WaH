@@ -316,6 +316,31 @@ done
 step DONE
 # ══════════════════════════════════════════════════════
 
+# ── Запись config.json в панель (если установлена) ────
+PANEL_DATA="/opt/naiveproxy-panel/panel/data"
+if [[ -d "$PANEL_DATA" ]] || mkdir -p "$PANEL_DATA" 2>/dev/null; then
+  SERVER_IP_NOW=$(curl -4 -s --connect-timeout 8 ifconfig.me 2>/dev/null \
+    || curl -4 -s --connect-timeout 8 icanhazip.com 2>/dev/null \
+    || hostname -I | awk '{print $1}')
+  cat > "${PANEL_DATA}/config.json" << CFGEOF
+{
+  "installed": true,
+  "domain": "${DOMAIN}",
+  "email": "${EMAIL}",
+  "serverIp": "${SERVER_IP_NOW}",
+  "adminPassword": "",
+  "proxyUsers": [
+    {
+      "username": "${LOGIN}",
+      "password": "${PASSWORD}",
+      "createdAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+    }
+  ]
+}
+CFGEOF
+  log "✅ config.json записан в ${PANEL_DATA}"
+fi
+
 log ""
 log "╔════════════════════════════════════════════════════╗"
 log "║   ✅ NaiveProxy успешно установлен!                ║"

@@ -322,16 +322,18 @@ body {
 }
 
 /* ════════════════ SERVICE CONTROLS ════════════════ */
-.service-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.service-btns { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.service-btns .btn { min-width: 0; }
 .not-installed-msg {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 20px;
+  gap: 14px;
+  padding: 28px 20px;
   color: var(--text-muted);
   text-align: center;
 }
+.not-installed-msg p { font-size: 0.88rem; }
 .not-installed-msg svg { opacity: 0.3; }
 
 /* ════════════════ QUICK LINKS ════════════════ */
@@ -378,7 +380,7 @@ body {
   gap: 16px;
 }
 
-.form-actions { margin-top: 20px; display: flex; justify-content: flex-end; }
+.form-actions { margin-top: 22px; display: flex; justify-content: flex-end; gap: 10px; }
 
 /* Progress Panel */
 .progress-percent {
@@ -628,7 +630,7 @@ body {
 }
 
 /* ════════════════ FORMS ════════════════ */
-.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group { display: flex; flex-direction: column; gap: 7px; }
 .form-label {
   font-size: 0.82rem;
   font-weight: 500;
@@ -665,7 +667,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
   padding: 9px 18px;
   border-radius: var(--radius-sm);
   font-family: var(--font-main);
@@ -678,8 +680,11 @@ body {
   white-space: nowrap;
   position: relative;
   overflow: hidden;
+  line-height: 1.4;
+  vertical-align: middle;
 }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn svg { flex-shrink: 0; }
 
 /* ════════════════════════════════════════════════════
    btn-shiny — тёмная кнопка с угловыми glow эффектами
@@ -692,15 +697,13 @@ body {
   background: radial-gradient(circle 70px at 80% -5%, #3a3a4a, #181b1b);
   color: #e2e8f0;
   border: 1.5px solid rgba(255,255,255,0.07);
-  border-radius: 14px;
+  border-radius: 12px;
   /* Тень: белый блик верх-право, тонкий violet рассеяно снизу */
   box-shadow:
     2px -2px 18px rgba(255,255,255,0.08),
-    /* мягкий violet снизу кнопки — только рассеянная подсветка */
     0 8px 22px rgba(109,40,217,0.20),
     0 4px 16px rgba(0,0,0,0.55);
   transition: all 0.28s ease;
-  padding: 10px 20px;
 }
 
 /* Верхний-правый белый блик */
@@ -709,8 +712,7 @@ body {
   position: absolute;
   top: 0; right: 0;
   width: 55%; height: 55%;
-  border-radius: 0 14px 0 0;
-  /* мягкий белый отблеск */
+  border-radius: 0 12px 0 0;
   background: radial-gradient(
     ellipse 80px 50px at 100% 0%,
     rgba(255,255,255,0.18),
@@ -727,7 +729,7 @@ body {
   position: absolute;
   bottom: 0; left: 0;
   width: 30px; height: 35%;
-  border-radius: 0 0 0 14px;
+  border-radius: 0 0 0 12px;
   background: radial-gradient(
     circle 30px at 0% 100%,
     rgba(109,40,217,0.55),
@@ -778,20 +780,19 @@ body {
   background: radial-gradient(circle 70px at 80% -5%, #2a3a5a, #0f1a2e);
   color: #e2e8f0;
   border: 1.5px solid rgba(255,255,255,0.07);
-  border-radius: 14px;
+  border-radius: 12px;
   box-shadow:
     2px -2px 18px rgba(255,255,255,0.06),
     0 8px 22px rgba(29,155,240,0.18),
     0 4px 16px rgba(0,0,0,0.55);
   transition: all 0.28s ease;
-  padding: 10px 20px;
 }
 .btn-tg::before {
   content: '';
   position: absolute;
   top: 0; right: 0;
   width: 55%; height: 55%;
-  border-radius: 0 14px 0 0;
+  border-radius: 0 12px 0 0;
   background: radial-gradient(ellipse 80px 50px at 100% 0%, rgba(255,255,255,0.14), transparent 70%);
   pointer-events: none;
   z-index: 1;
@@ -801,7 +802,7 @@ body {
   position: absolute;
   bottom: 0; left: 0;
   width: 52px; height: 52%;
-  border-radius: 0 0 0 14px;
+  border-radius: 0 0 0 12px;
   background: radial-gradient(circle 55px at 0% 100%, rgba(29,155,240,0.55), rgba(29,155,240,0.18) 50%, transparent 75%);
   box-shadow: -2px 8px 28px rgba(29,155,240,0.35);
   pointer-events: none;
@@ -865,10 +866,10 @@ body {
 .btn-danger { background: rgba(239,68,68,0.15); color: var(--danger); border-color: rgba(239,68,68,0.3); }
 .btn-danger:hover { background: rgba(239,68,68,0.25); transform: translateY(-1px); }
 
-.btn-sm { padding: 6px 12px; font-size: 0.8rem; }
-.btn-lg { padding: 13px 28px; font-size: 0.95rem; }
-.btn-full { width: 100%; }
-.btn-icon { padding: 8px; border-radius: var(--radius-sm); }
+.btn-sm { padding: 6px 12px; font-size: 0.8rem; gap: 6px; }
+.btn-lg { padding: 12px 26px; font-size: 0.92rem; }
+.btn-full { width: 100%; justify-content: center; }
+.btn-icon { padding: 8px; border-radius: var(--radius-sm); gap: 0; }
 
 .btn-loader { display: flex; align-items: center; }
 .spin { animation: spinAnim 1s linear infinite; }
@@ -938,27 +939,49 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 12px 18px;
+  padding: 12px 20px;
   font-size: 0.88rem;
+  font-weight: 500;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
   animation: toastIn 0.25s ease;
-  max-width: 320px;
+  max-width: 340px;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
-@keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
 .toast.toast-success { border-color: rgba(16,185,129,0.4); color: #6ee7b7; }
-.toast.toast-error { border-color: rgba(239,68,68,0.4); color: #fca5a5; }
-.toast.toast-info { border-color: rgba(59,130,246,0.4); color: #93c5fd; }
+.toast.toast-error   { border-color: rgba(239,68,68,0.4);  color: #fca5a5; }
+.toast.toast-info    { border-color: rgba(59,130,246,0.4);  color: #93c5fd; }
 
 /* ════════════════ RESPONSIVE ════════════════ */
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .install-layout { grid-template-columns: 1fr; }
 }
+
+@media (max-width: 900px) {
+  .cards-row { grid-template-columns: 1fr; }
+  .settings-grid { grid-template-columns: 1fr; }
+  .settings-clients-card { grid-column: 1 / -1; }
+}
+
 @media (max-width: 768px) {
   :root { --sidebar-w: 0px; }
-  .sidebar { transform: translateX(-100%); }
-  .main-content { margin-left: 0; padding: 16px; }
+  .sidebar { transform: translateX(-100%); width: 220px; transition: transform 0.25s ease; }
+  .sidebar.open { transform: translateX(0); }
+  .main-content { margin-left: 0; padding: 16px 14px; max-width: 100vw; }
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
   .cards-row, .settings-grid { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
-  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .page-header { flex-wrap: wrap; gap: 10px; }
+  .page-title { font-size: 1.2rem; }
+  .card-body { padding: 16px; }
+  .card-header { padding: 14px 16px; }
+  .modal { margin: 0 10px; }
+  .data-table { font-size: 0.8rem; }
+  .data-table th, .data-table td { padding: 8px 10px; }
+  .td-link { max-width: 120px; }
 }

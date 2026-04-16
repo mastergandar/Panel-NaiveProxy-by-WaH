@@ -256,10 +256,16 @@ function sendLog(ws, text, step = null, progress = null, level = 'info') {
 function updateCaddyfile(config, res, callback) {
   let basicAuthLines = '';
   if (config.proxyUsers && config.proxyUsers.length > 0) {
-    basicAuthLines = config.proxyUsers.map(u => `    basic_auth ${u.username} ${u.password}`).join('\n');
+    basicAuthLines = config.proxyUsers
+      .map(u => `    basic_auth ${u.username} ${u.password}`)
+      .join('\n');
   }
 
-  const caddyfile = `:443, ${config.domain} {
+  const caddyfileContent = `{
+  order forward_proxy before file_server
+}
+
+:443, ${config.domain} {
   tls ${config.email}
 
   forward_proxy {
@@ -275,16 +281,18 @@ ${basicAuthLines}
 }
 `;
 
-  const child = spawn('bash', ['-c', `cat > /etc/caddy/Caddyfile << 'CADDYEOF'\n{
-  order forward_proxy before file_server
-}\n\n${caddyfile}\nCADDYEOF`]);
-  child.on('close', () => {
-    spawn('bash', ['-c', 'caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || systemctl restart caddy 2>/dev/null || true']);
-    if (callback) callback();
-  });
-  child.on('error', () => {
-    if (callback) callback();
-  });
+  try {
+    fs.writeFileSync('/etc/caddy/Caddyfile', caddyfileContent, 'utf8');
+  } catch (e) {
+    // Not running as root or Caddy not installed — skip silently
+  }
+
+  // Reload Caddy to apply new config
+  const reload = spawn('bash', ['-c',
+    'caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || systemctl restart caddy 2>/dev/null || true'
+  ]);
+  reload.on('close', () => { if (callback) callback(); });
+  reload.on('error', () => { if (callback) callback(); });
 }
 
 function handleInstall(ws, data) {
