@@ -2,7 +2,7 @@
 # ═══════════════════════════════════════════════════════════════════════
 #  Panel NaiveProxy by RIXXX — Полный установщик
 #  Стек: Traefik (edge/ACME) + Caddy (NaiveProxy) + Hysteria2 + Node.js панель
-#  Запуск: bash <(curl -fsSL https://raw.githubusercontent.com/cwash797-cmd/Panel-NaiveProxy-by-RIXXX/main/install.sh)
+#  Запуск: bash <(curl -fsSL https://raw.githubusercontent.com/mastergandar/Panel-NaiveProxy-by-WaH/main/install.sh)
 #  Требования: Ubuntu 22.04 / 24.04, root, чистый сервер
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -11,7 +11,7 @@ export DEBIAN_FRONTEND=noninteractive
 export NEEDRESTART_MODE=a
 export NEEDRESTART_SUSPEND=1
 
-REPO_URL="https://github.com/cwash797-cmd/Panel-NaiveProxy-by-RIXXX"
+REPO_URL="https://github.com/mastergandar/Panel-NaiveProxy-by-WaH"
 PANEL_DIR="/opt/naiveproxy-panel"
 SERVICE_NAME="naiveproxy-panel"
 INTERNAL_PORT=3000
@@ -174,14 +174,27 @@ if [[ ! -f "$TRAEFIK_SCRIPT" ]]; then
   TRAEFIK_SCRIPT="${SCRIPT_DIR}/panel/scripts/install_traefik.sh"
 fi
 
-if [[ -f "$TRAEFIK_SCRIPT" ]]; then
-  bash "$TRAEFIK_SCRIPT" 2>&1
-else
-  # Инлайн-установка если скрипт не найден
+if [[ ! -f "$TRAEFIK_SCRIPT" ]]; then
   log_warn "install_traefik.sh не найден — клонируем репозиторий сначала"
+  if [[ -d "${PANEL_DIR}/.git" ]]; then
+    cd "${PANEL_DIR}" && git pull --ff-only 2>&1 | tail -2 || true
+  else
+    rm -rf "${PANEL_DIR}"
+    git clone "${REPO_URL}" "${PANEL_DIR}" 2>&1 | tail -3 || {
+      log_err "Не удалось клонировать репозиторий"
+      exit 1
+    }
+  fi
+  TRAEFIK_SCRIPT="${PANEL_DIR}/panel/scripts/install_traefik.sh"
 fi
 
-log_ok "Traefik установлен"
+if [[ -f "$TRAEFIK_SCRIPT" ]]; then
+  bash "$TRAEFIK_SCRIPT" 2>&1
+  log_ok "Traefik установлен"
+else
+  log_err "install_traefik.sh не найден даже после клонирования"
+  exit 1
+fi
 
 # ── Б6. Ждём выдачи Let's Encrypt сертификатов ────────────────────────
 log_step "[6/13] Ожидание Let's Encrypt сертификатов (до 3 минут)..."
