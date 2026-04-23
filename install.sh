@@ -100,7 +100,7 @@ echo ""
 # ════════════════════════════════════════════════════════════════════════
 
 # ── Б1. needrestart фикс + обновление системы ──────────────────────────
-log_step "[1/13] Обновление системы..."
+log_step "[1/14] Обновление системы..."
 
 systemctl stop unattended-upgrades 2>/dev/null || true
 systemctl disable unattended-upgrades 2>/dev/null || true
@@ -131,7 +131,7 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
 log_ok "Система обновлена"
 
 # ── Б2. Включение BBR ──────────────────────────────────────────────────
-log_step "[2/13] Включение BBR (оптимизация скорости)..."
+log_step "[2/14] Включение BBR (оптимизация скорости)..."
 
 grep -qxF "net.core.default_qdisc=fq" /etc/sysctl.conf \
   || echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
@@ -141,7 +141,7 @@ sysctl -p >/dev/null 2>&1 || true
 log_ok "BBR включён"
 
 # ── Б3. UFW ────────────────────────────────────────────────────────────
-log_step "[3/13] Настройка файрволла UFW..."
+log_step "[3/14] Настройка файрволла UFW..."
 
 ufw allow 22/tcp  >/dev/null 2>&1 || true
 ufw allow 80/tcp  >/dev/null 2>&1 || true
@@ -152,52 +152,52 @@ echo "y" | ufw enable >/dev/null 2>&1 || ufw --force enable >/dev/null 2>&1 || t
 log_ok "UFW настроен (22, 80, 443/tcp+udp; порт 3000 закрыт снаружи)"
 
 # ── Б4. Генерируем htpasswd хеш для Traefik basicAuth ──────────────────
-log_step "[4/13] Генерация htpasswd credentials для Traefik..."
+log_step "[4/14] Генерация htpasswd credentials для Traefik..."
 
 TRAEFIK_PASS_HASHED=$(htpasswd -nbB "${TRAEFIK_USER}" "${TRAEFIK_PASS}" 2>/dev/null | cut -d: -f2)
 # Double $ for YAML config (Traefik requirement)
 TRAEFIK_PASS_YAML=$(echo "${TRAEFIK_PASS_HASHED}" | sed 's/\$/\$\$/g')
 log_ok "htpasswd хеш сгенерирован"
 
-# ── Б5. Установка Traefik + traefik-certs-dumper ───────────────────────
-log_step "[5/13] Установка Traefik (edge proxy + ACME сертификаты)..."
+# ── Б5. Клонирование репозитория ───────────────────────────────────────
+log_step "[5/14] Клонирование репозитория..."
 
-# Экспортируем переменные для install_traefik.sh
+PANEL_REMOTE=$(git -C "${PANEL_DIR}" remote get-url origin 2>/dev/null || echo "")
+
+if [[ -d "${PANEL_DIR}/.git" && "$PANEL_REMOTE" == *"mastergandar"* ]]; then
+  log_info "Репозиторий уже клонирован — обновляем..."
+  git -C "${PANEL_DIR}" pull --ff-only 2>&1 | tail -2 || true
+else
+  if [[ -d "${PANEL_DIR}" ]]; then
+    log_warn "Найден репозиторий от другого origin (${PANEL_REMOTE}) — пересклонируем"
+    rm -rf "${PANEL_DIR}"
+  fi
+  git clone "${REPO_URL}" "${PANEL_DIR}" 2>&1 | tail -3 || {
+    log_err "Не удалось клонировать репозиторий"
+    exit 1
+  }
+fi
+
+log_ok "Репозиторий готов в ${PANEL_DIR}"
+
+# ── Б6. Установка Traefik + traefik-certs-dumper ───────────────────────
+log_step "[6/14] Установка Traefik (edge proxy + ACME сертификаты)..."
+
 export NAIVE_DOMAIN PANEL_DOMAIN ADMIN_DOMAIN NAIVE_EMAIL
 export TRAEFIK_USER TRAEFIK_PASS_YAML
 
-SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 TRAEFIK_SCRIPT="${PANEL_DIR}/panel/scripts/install_traefik.sh"
-
-# Если скрипт ещё не скачан (первый запуск до клонирования), используем путь рядом
-if [[ ! -f "$TRAEFIK_SCRIPT" ]]; then
-  TRAEFIK_SCRIPT="${SCRIPT_DIR}/panel/scripts/install_traefik.sh"
-fi
-
-if [[ ! -f "$TRAEFIK_SCRIPT" ]]; then
-  log_warn "install_traefik.sh не найден — клонируем репозиторий сначала"
-  if [[ -d "${PANEL_DIR}/.git" ]]; then
-    cd "${PANEL_DIR}" && git pull --ff-only 2>&1 | tail -2 || true
-  else
-    rm -rf "${PANEL_DIR}"
-    git clone "${REPO_URL}" "${PANEL_DIR}" 2>&1 | tail -3 || {
-      log_err "Не удалось клонировать репозиторий"
-      exit 1
-    }
-  fi
-  TRAEFIK_SCRIPT="${PANEL_DIR}/panel/scripts/install_traefik.sh"
-fi
 
 if [[ -f "$TRAEFIK_SCRIPT" ]]; then
   bash "$TRAEFIK_SCRIPT" 2>&1
   log_ok "Traefik установлен"
 else
-  log_err "install_traefik.sh не найден даже после клонирования"
+  log_err "install_traefik.sh не найден в ${PANEL_DIR}/panel/scripts/"
   exit 1
 fi
 
 # ── Б6. Ждём выдачи Let's Encrypt сертификатов ────────────────────────
-log_step "[6/13] Ожидание Let's Encrypt сертификатов (до 3 минут)..."
+log_step "[7/14] Ожидание Let's Encrypt сертификатов..."
 
 log_info "Traefik запрашивает сертификаты для:"
 log_info "  ${NAIVE_DOMAIN}, ${PANEL_DOMAIN}, ${ADMIN_DOMAIN}"
@@ -222,7 +222,7 @@ if [[ $CERT_WAIT -eq 0 ]]; then
 fi
 
 # ── Б7. Первый дамп сертификатов ──────────────────────────────────────
-log_step "[7/13] Экспорт сертификатов из Traefik..."
+log_step "[8/14] Экспорт сертификатов из Traefik..."
 
 mkdir -p /etc/ssl/traefik-certs
 
@@ -241,7 +241,7 @@ fi
 systemctl start traefik-certs-dumper 2>/dev/null || true
 
 # ── Б8. Установка Go ───────────────────────────────────────────────────
-log_step "[8/13] Установка Go..."
+log_step "[9/14] Установка Go..."
 
 rm -rf /usr/local/go
 
@@ -275,7 +275,7 @@ grep -q "/usr/local/go/bin" /root/.profile 2>/dev/null || {
 log_ok "Go установлен: $(/usr/local/go/bin/go version 2>/dev/null || echo 'неизвестно')"
 
 # ── Б9. Сборка Caddy с naive-плагином ─────────────────────────────────
-log_step "[9/13] Сборка Caddy + naive forward proxy (3-7 минут)..."
+log_step "[10/14] Сборка Caddy + naive forward proxy (3-7 минут)..."
 
 export GOROOT=/usr/local/go
 export GOPATH=/root/go
@@ -306,7 +306,7 @@ chmod +x /usr/bin/caddy
 log_ok "Caddy собран: $(/usr/bin/caddy version 2>/dev/null || echo 'неизвестно')"
 
 # ── Б10. Конфигурация и запуск Caddy ──────────────────────────────────
-log_step "[10/13] Конфигурация Caddy (порт 10443, cert файлы)..."
+log_step "[11/14] Конфигурация Caddy (порт 10443, cert файлы)..."
 
 mkdir -p /var/www/html /etc/caddy
 
@@ -389,23 +389,21 @@ done
 [[ $CADDY_OK -eq 0 ]] && log_warn "Caddy запустится автоматически после получения сертификатов"
 
 # ── Б11. Установка Hysteria2 ───────────────────────────────────────────
-log_step "[11/13] Установка Hysteria2 (QUIC прокси, UDP 443)..."
+log_step "[12/14] Установка Hysteria2 (QUIC прокси, UDP 443)..."
 
 HYSTERIA_SCRIPT="${PANEL_DIR}/panel/scripts/install_hysteria2.sh"
-if [[ ! -f "$HYSTERIA_SCRIPT" ]]; then
-  HYSTERIA_SCRIPT="${SCRIPT_DIR}/panel/scripts/install_hysteria2.sh"
-fi
 
 if [[ -f "$HYSTERIA_SCRIPT" ]]; then
   export NAIVE_DOMAIN HY2_PASSWORD
   bash "$HYSTERIA_SCRIPT" 2>&1
   log_ok "Hysteria2 установлен"
 else
-  log_warn "install_hysteria2.sh не найден — Hysteria2 не установлен"
+  log_err "install_hysteria2.sh не найден в ${PANEL_DIR}/panel/scripts/"
+  exit 1
 fi
 
 # ── Б12. Node.js + PM2 ────────────────────────────────────────────────
-log_step "[12/13] Установка Node.js и панели управления..."
+log_step "[13/14] Установка Node.js и панели управления..."
 
 if ! command -v node &>/dev/null || [[ "$(node -v 2>/dev/null | cut -d. -f1 | tr -d 'v')" -lt 18 ]]; then
   log_info "Скачиваем NodeSource репозиторий..."
@@ -468,7 +466,7 @@ else
 fi
 
 # ── Б13. Запуск панели через PM2 ───────────────────────────────────────
-log_step "[13/13] Запуск панели управления через PM2..."
+log_step "[14/14] Запуск панели управления через PM2..."
 
 cd "${PANEL_DIR}/panel"
 pm2 delete "${SERVICE_NAME}" 2>/dev/null || true
