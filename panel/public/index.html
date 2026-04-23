@@ -64,7 +64,7 @@
         </span>
       </button>
     </form>
-    <div class="login-hint">По умолчанию: admin / admin</div>
+    <div class="login-hint">Пароль задаётся при установке (см. вывод install.sh)</div>
   </div>
 </div>
 
@@ -218,7 +218,31 @@
 
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title">Быстрые ссылки</h3>
+            <h3 class="card-title">Hysteria2 (UDP 443)</h3>
+            <button class="btn btn-outline btn-sm" onclick="hysteriaRestart()" id="hy2RestartBtn" style="display:none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Перезапустить
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="hy2NotEnabled" class="not-installed-msg">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <p>Hysteria2 не установлен</p>
+            </div>
+            <div id="hy2Info" class="hidden">
+              <div class="stat-value" id="hy2Status"><span class="dot dot-gray"></span> —</div>
+              <div style="margin-top:12px">
+                <div class="form-label" style="margin-bottom:4px">Ссылка подключения (QUIC/UDP):</div>
+                <div class="done-link" id="hy2Link" style="font-size:12px;cursor:pointer" onclick="copyText(this.textContent)">—</div>
+              </div>
+              <div style="margin-top:8px;font-size:12px;color:var(--text-muted)">Клиенты: NekoBox, Karing, v2rayN (Hysteria2 core)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Быстрые ссылки NaiveProxy</h3>
           </div>
           <div class="card-body" id="quickLinks">
             <div class="quick-link-empty" id="quickLinksEmpty">
@@ -315,10 +339,12 @@
               <div class="install-step" id="step-firewall" data-step="firewall"><div class="step-dot"></div><div class="step-label">Настройка файрволла</div></div>
               <div class="install-step" id="step-golang" data-step="golang"><div class="step-dot"></div><div class="step-label">Установка Go</div></div>
               <div class="install-step" id="step-caddy" data-step="caddy"><div class="step-dot"></div><div class="step-label">Сборка Caddy (3-7 мин)</div></div>
-              <div class="install-step" id="step-caddyfile" data-step="caddyfile"><div class="step-dot"></div><div class="step-label">Конфигурация</div></div>
-              <div class="install-step" id="step-service" data-step="service"><div class="step-dot"></div><div class="step-label">Настройка сервиса</div></div>
-              <div class="install-step" id="step-start" data-step="start"><div class="step-dot"></div><div class="step-label">Запуск</div></div>
-              <div class="install-step" id="step-done" data-step="done"><div class="step-dot"></div><div class="step-label">Готово!</div></div>
+              <div class="install-step" id="step-caddyfile" data-step="caddyfile"><div class="step-dot"></div><div class="step-label">Конфигурация Caddy</div></div>
+              <div class="install-step" id="step-service" data-step="service"><div class="step-dot"></div><div class="step-label">Systemd сервис</div></div>
+              <div class="install-step" id="step-start" data-step="start"><div class="step-dot"></div><div class="step-label">Запуск Caddy</div></div>
+              <div class="install-step" id="step-hysteria" data-step="hysteria"><div class="step-dot"></div><div class="step-label">⚡ Hysteria2</div></div>
+              <div class="install-step" id="step-hysteriastart" data-step="hysteriastart"><div class="step-dot"></div><div class="step-label">⚡ Запуск Hysteria2</div></div>
+              <div class="install-step" id="step-done" data-step="done"><div class="step-dot"></div><div class="step-label">✅ Готово!</div></div>
             </div>
 
             <div class="terminal-wrap">
@@ -336,9 +362,17 @@
               <h3>Установка завершена!</h3>
               <p>NaiveProxy успешно настроен и запущен</p>
               <div class="done-link-wrap">
-                <div class="form-label">Ваша ссылка для подключения:</div>
+                <div class="form-label">NaiveProxy — ссылка для подключения:</div>
                 <div class="done-link" id="doneLink"></div>
                 <button class="btn btn-outline btn-sm" onclick="copyLink()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  Копировать
+                </button>
+              </div>
+              <div class="done-link-wrap hidden" id="doneHy2Row">
+                <div class="form-label">Hysteria2 — ссылка для подключения:</div>
+                <div class="done-link" id="doneHy2Link"></div>
+                <button class="btn btn-outline btn-sm" onclick="copyText(document.getElementById('doneHy2Link').textContent)">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                   Копировать
                 </button>

@@ -156,12 +156,14 @@ async function loadDashboard() {
       serviceBtns.style.display = 'none';
       quickLinksEmpty.classList.remove('hidden');
       quickLinksList.classList.add('hidden');
+      updateHy2Section(null);
     } else {
       const isRunning = data.status === 'running';
       statusEl.innerHTML = isRunning
         ? `<span class="dot dot-green"></span> Работает`
         : `<span class="dot dot-red"></span> Остановлен`;
-      domainEl.textContent = data.domain || '—';
+      const naiveDomain = data.naiveDomain || data.domain || '';
+      domainEl.textContent = naiveDomain || '—';
       ipEl.textContent = data.serverIp || '—';
       countEl.textContent = data.usersCount || '0';
       notInstalled.classList.add('hidden');
@@ -175,7 +177,7 @@ async function loadDashboard() {
         quickLinksList.classList.remove('hidden');
         quickLinksList.innerHTML = '';
         usersData.users.slice(0, 5).forEach(u => {
-          const link = `naive+https://${u.username}:${u.password}@${data.domain}:443`;
+          const link = `naive+https://${u.username}:${u.password}@${naiveDomain}:443`;
           quickLinksList.innerHTML += `
             <div class="quick-link-item">
               <span style="min-width:70px;color:var(--text-primary);font-weight:600">${u.username}</span>
@@ -187,9 +189,69 @@ async function loadDashboard() {
         quickLinksEmpty.classList.remove('hidden');
         quickLinksList.classList.add('hidden');
       }
+
+      // Hysteria2 status
+      if (data.hysteriaEnabled) {
+        try {
+          const hy2Res = await fetch('/api/hysteria/status');
+          const hy2Data = await hy2Res.json();
+          updateHy2Section({ ...hy2Data, domain: naiveDomain, password: data.hysteriaPassword });
+        } catch {
+          updateHy2Section({ running: false, domain: naiveDomain, password: data.hysteriaPassword });
+        }
+      } else {
+        updateHy2Section(null);
+      }
     }
   } catch (err) {
     statusEl.innerHTML = '<span class="dot dot-yellow"></span> Ошибка';
+  }
+}
+
+function updateHy2Section(hy2) {
+  const notEnabled = document.getElementById('hy2NotEnabled');
+  const info = document.getElementById('hy2Info');
+  const statusEl = document.getElementById('hy2Status');
+  const linkEl = document.getElementById('hy2Link');
+  const restartBtn = document.getElementById('hy2RestartBtn');
+
+  if (!notEnabled) return;
+
+  if (!hy2) {
+    notEnabled.classList.remove('hidden');
+    if (info) info.classList.add('hidden');
+    if (restartBtn) restartBtn.style.display = 'none';
+    return;
+  }
+
+  notEnabled.classList.add('hidden');
+  if (info) info.classList.remove('hidden');
+
+  if (statusEl) {
+    statusEl.innerHTML = hy2.running
+      ? '<span class="dot dot-green"></span> Работает'
+      : '<span class="dot dot-red"></span> Остановлен';
+  }
+
+  if (linkEl && hy2.domain && hy2.password) {
+    const hy2Link = `hysteria2://${hy2.password}@${hy2.domain}:443`;
+    linkEl.innerHTML = `
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.85em">${escapeHtml(hy2Link)}</span>
+      <button class="quick-link-copy" onclick="copyText('${escapeHtml(hy2Link)}')">Копировать</button>`;
+  }
+
+  if (restartBtn) { restartBtn.classList.remove('hidden'); restartBtn.style.display = ''; }
+}
+
+async function hysteriaRestart() {
+  showToast('Перезапуск Hysteria2...', 'info');
+  try {
+    const res = await fetch('/api/hysteria/restart', { method: 'POST' });
+    const data = await res.json();
+    showToast(data.message || (data.success ? 'Hysteria2 перезапущен' : 'Ошибка'), data.success ? 'success' : 'error');
+    setTimeout(loadDashboard, 1500);
+  } catch {
+    showToast('Ошибка соединения', 'error');
   }
 }
 
@@ -310,7 +372,7 @@ function handleWsMessage(msg) {
     installRunning = false;
     setProgress(100);
     markStepDone('done');
-    showInstallDone(msg.link);
+    showInstallDone(msg.link, msg.hy2Link);
     resetInstallBtn();
   } else if (msg.type === 'install_error') {
     installRunning = false;
@@ -355,15 +417,24 @@ function markStepDone(stepName) {
   }
 }
 
-function showInstallDone(link) {
+function showInstallDone(link, hy2Link) {
   document.getElementById('doneLink').textContent = link || '';
+  const hy2LinkEl = document.getElementById('doneHy2Link');
+  const hy2Row = document.getElementById('doneHy2Row');
+  if (hy2LinkEl && hy2Row) {
+    if (hy2Link) {
+      hy2LinkEl.textContent = hy2Link;
+      hy2Row.classList.remove('hidden');
+    } else {
+      hy2Row.classList.add('hidden');
+    }
+  }
   document.getElementById('installDone').classList.remove('hidden');
-  // Mark all steps done
   document.querySelectorAll('.install-step').forEach(s => {
     s.classList.remove('active');
     s.classList.add('done');
   });
-  showToast('✅ NaiveProxy успешно установлен!', 'success');
+  showToast('✅ NaiveProxy + Hysteria2 успешно установлены!', 'success');
 }
 
 function copyLink() {
@@ -404,8 +475,9 @@ async function loadUsers() {
     tbody.innerHTML = '';
 
     users.forEach((u, i) => {
-      const link = status.installed && status.domain
-        ? `naive+https://${u.username}:${u.password}@${status.domain}:443`
+      const naiveDomain = status.naiveDomain || status.domain || '';
+      const link = status.installed && naiveDomain
+        ? `naive+https://${u.username}:${u.password}@${naiveDomain}:443`
         : `(установите сервер)`;
       const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString('ru') : '—';
       tbody.innerHTML += `
@@ -414,11 +486,11 @@ async function loadUsers() {
           <td class="td-login">${escapeHtml(u.username)}</td>
           <td class="td-pwd">${escapeHtml(u.password)}</td>
           <td class="td-link" title="${escapeHtml(link)}">
-            ${status.installed ? `<span style="cursor:pointer" onclick="copyText('${escapeHtml(link)}')" title="Нажмите для копирования">${escapeHtml(link)}</span>` : '<span style="color:var(--text-muted)">Сервер не установлен</span>'}
+            ${status.installed && naiveDomain ? `<span style="cursor:pointer" onclick="copyText('${escapeHtml(link)}')" title="Нажмите для копирования">${escapeHtml(link)}</span>` : '<span style="color:var(--text-muted)">Сервер не установлен</span>'}
           </td>
           <td>${date}</td>
           <td>
-            ${status.installed ? `<button class="btn btn-outline btn-sm" onclick="copyText('${escapeHtml(link)}')" title="Копировать ссылку">
+            ${status.installed && naiveDomain ? `<button class="btn btn-outline btn-sm" onclick="copyText('${escapeHtml(link)}')" title="Копировать ссылку">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             </button>` : ''}
             <button class="btn btn-danger btn-sm" onclick="showDeleteModal('${escapeHtml(u.username)}')">
@@ -514,8 +586,8 @@ async function changePassword() {
     showAlert(alertEl, 'Новые пароли не совпадают', 'error');
     return;
   }
-  if (newPwd.length < 6) {
-    showAlert(alertEl, 'Пароль должен быть минимум 6 символов', 'error');
+  if (newPwd.length < 12) {
+    showAlert(alertEl, 'Пароль должен быть минимум 12 символов', 'error');
     return;
   }
 
