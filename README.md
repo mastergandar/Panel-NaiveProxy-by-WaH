@@ -8,7 +8,7 @@
 ## Быстрая установка
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/cwash797-cmd/Panel-NaiveProxy-by-RIXXX/main/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/mastergandar/Panel-NaiveProxy-by-WaH/main/install.sh)
 ```
 
 Скрипт запросит:
